@@ -10,6 +10,7 @@ class AudioTranscriptionRequest:
     file: bytes = File(None)  # File, optional, high priority
     model: str = Form("whisper-1")  # OpenAI-like by default, optional
     language: str = Form(None)  #  ISO-639-1, optional
+    temperature: float = Form(0)  # The sampling temperature, between 0 and 1
 
     # Custom
     url: str = Form(None)  # File URL, optional, low priority
@@ -24,6 +25,7 @@ class AudioTranscriptionResponse(BaseModel):
 class AudioTranslationRequest:
     file: bytes = File(None)  # File, optional, high priority
     model: str = Form("whisper-1")  # OpenAI-like by default, optional
+    temperature: float = Form(0)  # The sampling temperature, between 0 and 1
 
     # Custom
     url: str = Form(None)  # File URL, optional, low priority

@@ -75,8 +75,9 @@ def create_app(
                 detail="Must upload a file or use 'url' param!",
             )
 
-        language = form_data.language if form_data.language else None
         task = "transcribe"
+        language = form_data.language if form_data.language else None
+        temperature = form_data.temperature
 
         req_time = time.time()
         async with semaphore:
@@ -87,7 +88,7 @@ def create_app(
                 )
             loop = asyncio.get_running_loop()
             return await loop.run_in_executor(
-                None, model.generate, file, language, task
+                None, model.generate, file, True, task, language, temperature
             )
 
     @app.post(
@@ -115,8 +116,9 @@ def create_app(
                 detail="Must upload a file or use 'url' param!",
             )
 
-        language = None
         task = "translate"
+        language = None
+        temperature = form_data.temperature
 
         req_time = time.time()
         async with semaphore:
@@ -127,7 +129,7 @@ def create_app(
                 )
             loop = asyncio.get_running_loop()
             return await loop.run_in_executor(
-                None, model.generate, file, language, task
+                None, model.generate, file, True, task, language, temperature
             )
 
     return app

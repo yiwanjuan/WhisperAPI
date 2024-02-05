@@ -1,6 +1,5 @@
 import argparse
 import dataclasses
-from copy import deepcopy
 from typing import Dict
 
 import torch
@@ -12,10 +11,8 @@ class STTArgs:
     device_id: str = "0"
     model_name: str = "openai/whisper-large-v3"
     batch_size: int = 24
+    chunk_length_s: float = 30
     flash: bool = False
-    language: str = "None"
-    task: str = "transcribe"
-    timestamp: str = "chunk"
 
     @staticmethod
     def add_cli_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
@@ -35,21 +32,6 @@ class STTArgs:
             help="Name of the pretrained model/ checkpoint to perform ASR. (default: openai/whisper-large-v3)",
         )
         parser.add_argument(
-            "--task",
-            required=False,
-            default="transcribe",
-            type=str,
-            choices=["transcribe", "translate"],
-            help="Task to perform: transcribe or translate to another language. (default: transcribe)",
-        )
-        parser.add_argument(
-            "--language",
-            required=False,
-            type=str,
-            default="None",
-            help='Language of the input audio. (default: "None" (Whisper auto-detects the language))',
-        )
-        parser.add_argument(
             "--batch-size",
             required=False,
             type=int,
@@ -57,19 +39,18 @@ class STTArgs:
             help="Number of parallel batches you want to compute. Reduce if you face OOMs. (default: 24)",
         )
         parser.add_argument(
+            "--chunk-length-s",
+            required=False,
+            type=float,
+            default=30,
+            help="The length of each ASR chunk. (default: 30)",
+        )
+        parser.add_argument(
             "--flash",
             required=False,
             type=bool,
             default=False,
             help="Use Flash Attention 2. Read the FAQs to see how to install FA2 correctly. (default: False)",
-        )
-        parser.add_argument(
-            "--timestamp",
-            required=False,
-            type=str,
-            default="chunk",
-            choices=["chunk", "word"],
-            help="Whisper supports both chunked as well as word level timestamps. (default: chunk)",
         )
         return parser
 
@@ -84,8 +65,9 @@ class STTArgs:
 
 class STT:
     def __init__(self, args: STTArgs) -> None:
+        self.model_name = args.model_name
         self.batch_size = args.batch_size
-        self.timestamp = "word" if args.timestamp == "word" else True
+        self.chunk_length_s = args.chunk_length_s
 
         self.pipe = pipeline(
             "automatic-speech-recognition",
@@ -104,18 +86,14 @@ class STT:
         # elif not args.flash:
         #     pipe.model = pipe.model.to_bettertransformer()
 
-        language = None if args.language == "None" else args.language
-        self.generate_kwargs = {"task": args.task, "language": language}
-        if args.model_name.split(".")[-1] == "en":
-            self.generate_kwargs.pop("task")
-
     def generate(
         self,
         file: str | bytes,
+        timestamp: str | bool = True,
+        task: str = "transcribe",
         language: str | None = None,
-        task: str | None = None,
-        timestamp: str | None = None,
-        chunk_length: int = 30,
+        temperature: float = 0,
+        num_beams: int = 1,
     ) -> Dict[str, list[dict] | str]:
         """
         Return:
@@ -128,18 +106,20 @@ class STT:
                     `"".join(chunk["text"] for chunk in output["chunks"])`.
         """
 
-        generate_kwargs = (
-            deepcopy(self.generate_kwargs) if language or task else self.generate_kwargs
-        )
-        if language:
-            generate_kwargs["language"] = language
-        if task:
-            generate_kwargs["task"] = task
+        generate_kwargs = {
+            "do_sample": True if temperature > 0 else False,
+            "task": task,
+            "language": language,
+            "temperature": temperature if temperature > 0 else 1,
+            "num_beams": num_beams,
+        }
+        if self.model_name.split(".")[-1] == "en":
+            generate_kwargs.pop("task")
 
         return self.pipe(
             file,
             batch_size=self.batch_size,
+            chunk_length_s=self.chunk_length_s,
             generate_kwargs=generate_kwargs,
-            return_timestamps=timestamp or self.timestamp,
-            chunk_length_s=chunk_length,
+            return_timestamps="word" if timestamp == "word" else True,
         )  # type: ignore
