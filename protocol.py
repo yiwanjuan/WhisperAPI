@@ -8,7 +8,7 @@ from pydantic import BaseModel
 @dataclasses.dataclass
 class AudioTranscriptionRequest:
     file: bytes = File(None)  # File, optional, high priority
-    model: str = Form("openai/whisper-large-v3")  # large-v3 by default, optional
+    model: str = Form("whisper-1")  # OpenAI-like by default, optional
     language: str = Form(None)  #  ISO-639-1, optional
 
     # Custom
@@ -23,7 +23,7 @@ class AudioTranscriptionResponse(BaseModel):
 @dataclasses.dataclass
 class AudioTranslationRequest:
     file: bytes = File(None)  # File, optional, high priority
-    model: str = Form("openai/whisper-large-v3")  # large-v3 by default, optional
+    model: str = Form("whisper-1")  # OpenAI-like by default, optional
 
     # Custom
     url: str = Form(None)  # File URL, optional, low priority

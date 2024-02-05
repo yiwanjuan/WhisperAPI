@@ -151,6 +151,6 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    models = {"openai/whisper-large-v3": STT(STTArgs.from_cli_args(args))}
+    models = {"whisper-1": STT(STTArgs.from_cli_args(args))}
     app = create_app(models, args.concurrent, args.wait_timeout)
     uvicorn.run(app, host="0.0.0.0", port=args.port, workers=1)
