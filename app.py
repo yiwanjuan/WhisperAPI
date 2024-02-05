@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import gc
+import time
 from contextlib import asynccontextmanager
 from typing import Dict
 
@@ -34,7 +35,9 @@ async def lifespan(app: FastAPI):  # collects GPU memory
     torch_gc()
 
 
-def create_app(models: Dict[str, STT], concurrent: int = 1) -> FastAPI:
+def create_app(
+    models: Dict[str, STT], concurrent: int = 1, timeout: int = 300
+) -> FastAPI:
     models = {k.lower(): v for k, v in models.items()}  # Case-insensitive
     semaphore = asyncio.Semaphore(concurrent)
 
@@ -56,7 +59,10 @@ def create_app(models: Dict[str, STT], concurrent: int = 1) -> FastAPI:
         if form_data.model.lower() in models:
             model = models[form_data.model.lower()]
         else:
-            raise Exception(f"Model '{form_data.model}' is not supported!")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Model '{form_data.model}' is not supported!",
+            )
 
         file = None
         if form_data.file:
@@ -72,7 +78,13 @@ def create_app(models: Dict[str, STT], concurrent: int = 1) -> FastAPI:
         language = form_data.language if form_data.language else None
         task = "transcribe"
 
+        req_time = time.time()
         async with semaphore:
+            if time.time() - req_time > timeout:  # Client has probably given up
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=f"Rate limiting...",
+                )
             loop = asyncio.get_running_loop()
             return await loop.run_in_executor(
                 None, model.generate, file, language, task
@@ -87,7 +99,10 @@ def create_app(models: Dict[str, STT], concurrent: int = 1) -> FastAPI:
         if form_data.model.lower() in models:
             model = models[form_data.model.lower()]
         else:
-            raise Exception(f"Model '{form_data.model}' is not supported!")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Model '{form_data.model}' is not supported!",
+            )
 
         file = None
         if form_data.file:
@@ -103,7 +118,13 @@ def create_app(models: Dict[str, STT], concurrent: int = 1) -> FastAPI:
         language = None
         task = "translate"
 
+        req_time = time.time()
         async with semaphore:
+            if time.time() - req_time > timeout:  # Client has probably given up
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=f"Rate limiting...",
+                )
             loop = asyncio.get_running_loop()
             return await loop.run_in_executor(
                 None, model.generate, file, language, task
@@ -121,8 +142,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--concurrent", default=1, required=False, type=int, help="Max concurrency"
     )
+    parser.add_argument(
+        "--wait-timeout",
+        default=300,
+        required=False,
+        type=int,
+        help="Request max waiting time (in second)",
+    )
 
     args = parser.parse_args()
     models = {"openai/whisper-large-v3": STT(STTArgs.from_cli_args(args))}
-    app = create_app(models, args.concurrent)
+    app = create_app(models, args.concurrent, args.wait_timeout)
     uvicorn.run(app, host="0.0.0.0", port=args.port, workers=1)
