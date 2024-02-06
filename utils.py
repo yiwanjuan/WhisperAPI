@@ -95,6 +95,8 @@ def vtt_chunk(start: float, end: float, content: str) -> str:
 def whisper2srt(chunks: list[dict]) -> str:
     result = ""
     for index, chunk in enumerate(chunks, start=1):
+        if chunk["timestamp"][1] is None:  # Whisper did not predict an ending timestamp
+            chunk["timestamp"] = (chunk["timestamp"][0], chunk["timestamp"][0] + 0.001)
         result += srt_chunk(
             index, chunk["timestamp"][0], chunk["timestamp"][1], chunk["text"]
         )
@@ -104,5 +106,7 @@ def whisper2srt(chunks: list[dict]) -> str:
 def whisper2vtt(chunks: list[dict]) -> str:
     result = "WEBVTT\n\n"
     for chunk in chunks:
+        if chunk["timestamp"][1] is None:  # Whisper did not predict an ending timestamp
+            chunk["timestamp"] = (chunk["timestamp"][0], chunk["timestamp"][0] + 0.001)
         result += vtt_chunk(chunk["timestamp"][0], chunk["timestamp"][1], chunk["text"])
     return result
