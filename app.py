@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from inference import STT, STTArgs
+from language import ISO_639_1
 from protocol import (
     AudioTranscriptionRequest,
     AudioTranscriptionResponse,
@@ -90,7 +91,13 @@ def create_app(
             )
 
         task = "transcribe"
-        language = form_data.language if form_data.language else None
+        if form_data.language:
+            if form_data.language.lower() in ISO_639_1:
+                language = ISO_639_1[form_data.language.lower()]
+            else:
+                language = form_data.language.lower()  # Fallback
+        else:
+            language = None
         prompt = form_data.prompt
         temperature = form_data.temperature
         if not (temperature >= 0 and temperature <= 1):
