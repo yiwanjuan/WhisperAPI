@@ -8,8 +8,11 @@ from typing import Dict
 import torch
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from inference import STT, STTArgs
 from protocol import (
@@ -17,6 +20,9 @@ from protocol import (
     AudioTranscriptionResponse,
     AudioTranslationRequest,
     AudioTranslationResponse,
+    Error,
+    ErrorCode,
+    ErrorResponse,
 )
 
 
@@ -174,6 +180,29 @@ def create_app(
                 )
             elif response_format == "text":
                 return PlainTextResponse(output["text"])
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request, exc):
+        return JSONResponse(
+            jsonable_encoder(
+                ErrorResponse(error=Error(message=str(exc), code=ErrorCode.BADREQUEST))
+            ),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request, exc):
+        status_code = getattr(exc, "status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(
+            jsonable_encoder(
+                ErrorResponse(
+                    error=Error(
+                        message=str(exc), code=ErrorCode.parse_code(status_code)
+                    )
+                )
+            ),
+            status_code=status_code,
+        )
 
     return app
 

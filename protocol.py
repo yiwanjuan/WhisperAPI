@@ -1,4 +1,5 @@
 import dataclasses
+from enum import Enum
 from typing import Dict, List
 
 from fastapi import File, Form
@@ -38,3 +39,31 @@ class AudioTranslationRequest:
 class AudioTranslationResponse(BaseModel):  # "json" response_format
     text: str
     chunks: List[Dict] | None = None  # (Not included in original OpenAI API)
+
+
+class ErrorCode(int, Enum):
+    DEFAULT = 500
+    OVERLOAD = 529
+    RATELIMIT = 429
+    KEYERROR = 401
+    BADREQUEST = 400
+
+    @classmethod
+    def parse_code(cls, code: int):
+        """
+        Turn status code (int) into ErrorCode
+        """
+
+        try:
+            return cls(code)
+        except:
+            return cls.DEFAULT
+
+
+class Error(BaseModel):
+    message: str
+    code: ErrorCode = ErrorCode.DEFAULT
+
+
+class ErrorResponse(BaseModel):
+    error: Error
