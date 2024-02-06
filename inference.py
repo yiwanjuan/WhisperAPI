@@ -3,7 +3,7 @@ import dataclasses
 from typing import Dict
 
 import torch
-from transformers import pipeline
+from transformers import AutoProcessor, WhisperProcessor, pipeline
 
 
 @dataclasses.dataclass
@@ -69,6 +69,9 @@ class STT:
         self.batch_size = args.batch_size
         self.chunk_length_s = args.chunk_length_s
 
+        self.processor: WhisperProcessor = AutoProcessor.from_pretrained(
+            args.model_name
+        )
         self.pipe = pipeline(
             "automatic-speech-recognition",
             model=args.model_name,
@@ -92,6 +95,7 @@ class STT:
         timestamp: str | bool = True,
         task: str = "transcribe",
         language: str | None = None,
+        prompt: str | None = None,
         temperature: float = 0,
         num_beams: int = 1,
     ) -> Dict[str, list[dict] | str]:
@@ -107,9 +111,14 @@ class STT:
         """
 
         generate_kwargs = {
-            "do_sample": True if temperature > 0 else False,
             "task": task,
             "language": language,
+            "prompt_ids": (
+                self.processor.get_prompt_ids(prompt, return_tensors="pt")
+                if prompt
+                else None
+            ),
+            "do_sample": True if temperature > 0 else False,
             "temperature": temperature if temperature > 0 else 1,
             "num_beams": num_beams,
         }

@@ -7,13 +7,15 @@ from pydantic import BaseModel
 
 @dataclasses.dataclass
 class AudioTranscriptionRequest:
-    file: bytes = File(None)  # File, optional, high priority
-    model: str = Form("whisper-1")  # OpenAI-like by default, optional
-    language: str = Form(None)  #  ISO-639-1, optional
+    file: bytes | None = File(None)  # File, high priority
+    model: str = Form("whisper-1")  # OpenAI-like by default
+    language: str | None = Form(None)  #  ISO-639-1
+    prompt: str | None = Form(None)  # Should match the audio language
+    response_format: str = Form("json")  # json
     temperature: float = Form(0)  # The sampling temperature, between 0 and 1
 
     # Custom
-    url: str = Form(None)  # File URL, optional, low priority
+    url: str = Form(None)  # File URL, low priority
 
 
 class AudioTranscriptionResponse(BaseModel):
@@ -23,12 +25,14 @@ class AudioTranscriptionResponse(BaseModel):
 
 @dataclasses.dataclass
 class AudioTranslationRequest:
-    file: bytes = File(None)  # File, optional, high priority
-    model: str = Form("whisper-1")  # OpenAI-like by default, optional
+    file: bytes | None = File(None)  # File, high priority
+    model: str = Form("whisper-1")  # OpenAI-like by default
+    prompt: str | None = Form(None)  # Should match the audio language
+    response_format: str = Form("json")  # json
     temperature: float = Form(0)  # The sampling temperature, between 0 and 1
 
     # Custom
-    url: str = Form(None)  # File URL, optional, low priority
+    url: str = Form(None)  # File URL, low priority
 
 
 class AudioTranslationResponse(BaseModel):

@@ -77,7 +77,13 @@ def create_app(
 
         task = "transcribe"
         language = form_data.language if form_data.language else None
+        prompt = form_data.prompt
         temperature = form_data.temperature
+        if not (temperature >= 0 and temperature <= 1):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="temperature needs to be >=0 and <=1!",
+            )
 
         req_time = time.time()
         async with semaphore:
@@ -88,7 +94,7 @@ def create_app(
                 )
             loop = asyncio.get_running_loop()
             return await loop.run_in_executor(
-                None, model.generate, file, True, task, language, temperature
+                None, model.generate, file, True, task, language, prompt, temperature
             )
 
     @app.post(
@@ -118,7 +124,13 @@ def create_app(
 
         task = "translate"
         language = None
+        prompt = form_data.prompt
         temperature = form_data.temperature
+        if not (temperature >= 0 and temperature <= 1):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="temperature needs to be >=0 and <=1!",
+            )
 
         req_time = time.time()
         async with semaphore:
@@ -129,7 +141,7 @@ def create_app(
                 )
             loop = asyncio.get_running_loop()
             return await loop.run_in_executor(
-                None, model.generate, file, True, task, language, temperature
+                None, model.generate, file, True, task, language, prompt, temperature
             )
 
     return app
