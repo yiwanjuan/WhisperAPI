@@ -15,7 +15,6 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from inference import STT, STTArgs
-from language import ISO_639_1
 from protocol import (
     AudioTranscriptionRequest,
     AudioTranscriptionResponse,
@@ -25,6 +24,7 @@ from protocol import (
     ErrorCode,
     ErrorResponse,
 )
+from utils import ISO_639_1, whisper2srt, whisper2vtt
 
 
 def torch_gc() -> None:
@@ -65,7 +65,7 @@ def create_app(
     )
     async def audio_transcription(form_data: AudioTranscriptionRequest = Depends()):
         response_format = form_data.response_format
-        if not response_format.lower() in ["json", "text"]:
+        if not response_format.lower() in ["json", "text", "srt", "vtt"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Response format '{form_data.response_format}' is not supported!",
@@ -125,6 +125,10 @@ def create_app(
                 )
             elif response_format == "text":
                 return PlainTextResponse(output["text"])
+            elif response_format == "srt":
+                return PlainTextResponse(whisper2srt(output["chunks"]))
+            elif response_format == "vtt":
+                return PlainTextResponse(whisper2vtt(output["chunks"]))
 
     @app.post(
         "/v1/audio/translations",
@@ -133,7 +137,7 @@ def create_app(
     )
     async def audio_translation(form_data: AudioTranslationRequest = Depends()):
         response_format = form_data.response_format
-        if not response_format.lower() in ["json", "text"]:
+        if not response_format.lower() in ["json", "text", "srt", "vtt"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Response format '{form_data.response_format}' is not supported!",
@@ -187,6 +191,10 @@ def create_app(
                 )
             elif response_format == "text":
                 return PlainTextResponse(output["text"])
+            elif response_format == "srt":
+                return PlainTextResponse(whisper2srt(output["chunks"]))
+            elif response_format == "vtt":
+                return PlainTextResponse(whisper2vtt(output["chunks"]))
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request, exc):

@@ -12,7 +12,7 @@ class AudioTranscriptionRequest:
     model: str = Form("whisper-1")  # OpenAI-like by default
     language: str | None = Form(None)  #  ISO-639-1
     prompt: str | None = Form(None)  # Should match the audio language
-    response_format: str = Form("json")  # json/text
+    response_format: str = Form("json")  # json/text/srt/vtt, not support verbose_json
     temperature: float = Form(0)  # The sampling temperature, between 0 and 1
 
     # Custom
@@ -29,7 +29,7 @@ class AudioTranslationRequest:
     file: bytes | None = File(None)  # File, high priority
     model: str = Form("whisper-1")  # OpenAI-like by default
     prompt: str | None = Form(None)  # Should match the audio language
-    response_format: str = Form("json")  # json/text
+    response_format: str = Form("json")  # json/text/srt/vtt, not support verbose_json
     temperature: float = Form(0)  # The sampling temperature, between 0 and 1
 
     # Custom
