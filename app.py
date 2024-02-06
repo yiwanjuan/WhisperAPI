@@ -9,6 +9,7 @@ import torch
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 
 from inference import STT, STTArgs
 from protocol import (
@@ -56,6 +57,13 @@ def create_app(
         status_code=status.HTTP_200_OK,
     )
     async def audio_transcription(form_data: AudioTranscriptionRequest = Depends()):
+        response_format = form_data.response_format
+        if not response_format.lower() in ["json", "text"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Response format '{form_data.response_format}' is not supported!",
+            )
+
         if form_data.model.lower() in models:
             model = models[form_data.model.lower()]
         else:
@@ -92,10 +100,18 @@ def create_app(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail=f"Rate limiting...",
                 )
+
             loop = asyncio.get_running_loop()
-            return await loop.run_in_executor(
+            output: dict = await loop.run_in_executor(
                 None, model.generate, file, True, task, language, prompt, temperature
             )
+
+            if response_format == "json":
+                return AudioTranscriptionResponse(
+                    text=output["text"], chunks=output["chunks"]
+                )
+            elif response_format == "text":
+                return PlainTextResponse(output["text"])
 
     @app.post(
         "/v1/audio/translations",
@@ -103,6 +119,13 @@ def create_app(
         status_code=status.HTTP_200_OK,
     )
     async def audio_translation(form_data: AudioTranslationRequest = Depends()):
+        response_format = form_data.response_format
+        if not response_format.lower() in ["json", "text"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Response format '{form_data.response_format}' is not supported!",
+            )
+
         if form_data.model.lower() in models:
             model = models[form_data.model.lower()]
         else:
@@ -139,10 +162,18 @@ def create_app(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail=f"Rate limiting...",
                 )
+
             loop = asyncio.get_running_loop()
-            return await loop.run_in_executor(
+            output: dict = await loop.run_in_executor(
                 None, model.generate, file, True, task, language, prompt, temperature
             )
+
+            if response_format == "json":
+                return AudioTranscriptionResponse(
+                    text=output["text"], chunks=output["chunks"]
+                )
+            elif response_format == "text":
+                return PlainTextResponse(output["text"])
 
     return app
 
