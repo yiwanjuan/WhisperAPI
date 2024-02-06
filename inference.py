@@ -3,7 +3,7 @@ import dataclasses
 from typing import Dict
 
 import torch
-from transformers import AutoProcessor, WhisperProcessor, pipeline
+from transformers import pipeline
 
 
 @dataclasses.dataclass
@@ -69,9 +69,6 @@ class STT:
         self.batch_size = args.batch_size
         self.chunk_length_s = args.chunk_length_s
 
-        self.processor: WhisperProcessor = AutoProcessor.from_pretrained(
-            args.model_name
-        )
         self.pipe = pipeline(
             "automatic-speech-recognition",
             model=args.model_name,
@@ -86,8 +83,6 @@ class STT:
 
         if args.device_id == "mps":
             torch.mps.empty_cache()
-        # elif not args.flash:
-        #     pipe.model = pipe.model.to_bettertransformer()
 
     def generate(
         self,
@@ -114,7 +109,7 @@ class STT:
             "task": task,
             "language": language,
             "prompt_ids": (
-                self.processor.get_prompt_ids(prompt, return_tensors="pt")
+                self.pipe.tokenizer.get_prompt_ids(prompt, return_tensors="pt")  # type: ignore
                 if prompt
                 else None
             ),
