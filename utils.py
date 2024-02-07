@@ -1,3 +1,19 @@
+import gc
+from typing import Literal
+
+import torch
+
+
+def torch_gc() -> None:
+    r"""
+    Collects GPU memory.
+    """
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+
+
 # ISO_639_1 to language
 # Only including those supported by original OpenAI API
 ISO_639_1 = {
@@ -62,7 +78,7 @@ ISO_639_1 = {
 
 
 # s -> HH:mm:ss.SSS
-def timestamp(s: float, format: str = "vtt") -> str:
+def timestamp(s: float, format: Literal["vtt", "srt"] = "vtt") -> str:
     m, s = divmod(s, 60)
     H, m = divmod(m, 60)
     HHmmssSSS = "%02d:%02d:%s" % (H, m, str("%.3f" % s).zfill(6))
@@ -70,10 +86,6 @@ def timestamp(s: float, format: str = "vtt") -> str:
         HHmmssSSS = HHmmssSSS.replace(".", ",")
     elif format == "vtt":
         pass
-    else:
-        raise Exception(
-            f"'format' should be either 'vtt' or 'srt', but got '{format}'!"
-        )
     return HHmmssSSS
 
 

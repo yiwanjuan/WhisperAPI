@@ -4,3 +4,4 @@ ffmpeg
 fastapi
 uvicorn
 python-multipart
+gradio

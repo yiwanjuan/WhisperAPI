@@ -1,6 +1,6 @@
 import argparse
 import dataclasses
-from typing import Dict
+from typing import Dict, Literal
 
 import torch
 from transformers import pipeline
@@ -87,8 +87,8 @@ class STT:
     def generate(
         self,
         file: str | bytes,
-        timestamp: str | bool = True,
-        task: str = "transcribe",
+        timestamp: Literal["word"] | bool = True,
+        task: Literal["transcribe", "translate"] = "transcribe",
         language: str | None = None,
         prompt: str | None = None,
         temperature: float = 0,

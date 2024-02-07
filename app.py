@@ -1,11 +1,9 @@
 import argparse
 import asyncio
-import gc
 import time
 from contextlib import asynccontextmanager
 from typing import Dict
 
-import torch
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.encoders import jsonable_encoder
@@ -24,17 +22,7 @@ from protocol import (
     ErrorCode,
     ErrorResponse,
 )
-from utils import ISO_639_1, whisper2srt, whisper2vtt
-
-
-def torch_gc() -> None:
-    r"""
-    Collects GPU memory.
-    """
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
+from utils import ISO_639_1, torch_gc, whisper2srt, whisper2vtt
 
 
 @asynccontextmanager
