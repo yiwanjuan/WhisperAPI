@@ -53,8 +53,29 @@
      ```bash
      curl http://127.0.0.1:9000/v1/audio/transcriptions \
       -H "Content-Type: multipart/form-data" \
-      -F file="@/path/to/file/audio.mp3" \
+      -F file="@audio.mp3" \
       -F model="whisper-1"
+     ```
+     ```bash
+     {
+        "text": "xxxyyy",
+        "chunks": [
+           {
+              "timestamp": [
+                 0.12,
+                 1.28
+              ],
+              "text": "xxx"
+           },
+           {
+              "timestamp": [
+                 1.28,
+                 3.36
+              ],
+              "text": "yyy"
+           }
+        ]
+     }
      ```
    - GUI:
      - Easy way:
