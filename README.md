@@ -12,8 +12,8 @@
 ## Usage
 1. Clone this repository
 2. ```bash
-   conda create -n whisperapi python=3.10 -y
-   conda activte whisperapi
+   conda create -n whisper_api python=3.10 -y
+   conda activate whisper_api
    pip install -r requirements.txt
    ```
    (Optional:) You **MAY** need to install **flash-attention** following [this](https://github.com/Dao-AILab/flash-attention?tab=readme-ov-file#installation-and-features) to get even better performance
